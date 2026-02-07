@@ -10,6 +10,7 @@ import (
 
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/analysis"
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/inventory"
+	"github.com/retr0-kernel/kube-upgrade-advisor/internal/planner"
 )
 
 var (
@@ -95,9 +96,23 @@ func impactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return JSON response
+	// generate upgrade plan
+	planGenerator := planner.NewPlanner()
+	plan, err := planGenerator.GeneratePlan(assessment)
+
+	// create combined response
+	response := &planner.UpgradeAssessmentWithPlan{
+		ImpactAssessment: assessment,
+	}
+
+	if err == nil && plan != nil {
+		response.OrderedUpgradeSteps = plan.OrderedUpgradeSteps
+		response.UpgradePlan = plan
+	}
+
+	// return JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(assessment)
+	json.NewEncoder(w).Encode(response)
 }
 
 func clustersHandler(w http.ResponseWriter, r *http.Request) {

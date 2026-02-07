@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  kube-upgrade-advisor-cli:
+    build: .
+    container_name: kube-upgrade-advisor-cli
+    environment:
+      - DATABASE_URL=/data/kube-advisor.db
+      - KUBECONFIG=/kubeconfig/config
+      - API_KNOWLEDGE_PATH=./knowledge-base/apis.json
+      - CHART_KNOWLEDGE_PATH=./knowledge-base/chart-matrix.json
+    volumes:
+      - ./data:/data
+      - ~/.kube:/kubeconfig:ro
+      - ./manifests:/manifests:ro
+    command: scan --manifests /manifests
+    network_mode: host
+
+  kube-upgrade-advisor-server:
+    build: .
+    container_name: kube-upgrade-advisor-server
+    environment:
+      - DB_PATH=/data/kube-advisor.db
+      - PORT=8080
+      - API_KNOWLEDGE_PATH=./knowledge-base/apis.json
+      - CHART_KNOWLEDGE_PATH=./knowledge-base/chart-matrix.json
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    entrypoint: ["./kube-upgrade-server"]
+    command: []
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  data:

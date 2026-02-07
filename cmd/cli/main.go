@@ -11,6 +11,7 @@ import (
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/cluster"
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/inventory"
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/manifests"
+	"github.com/retr0-kernel/kube-upgrade-advisor/internal/planner"
 	"github.com/spf13/cobra"
 )
 
@@ -191,9 +192,27 @@ func runImpact(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to compute impact: %v", err)
 	}
 
+	//generate upgrade plan
+	planGenerator := planner.NewPlanner()
+	plan, err := planGenerator.GeneratePlan(assessment)
+	if err != nil {
+		log.Printf("Warning: Failed to generate upgrade plan: %v", err)
+	}
+
 	// generate and print report
 	report := analyzer.GenerateReport(assessment)
 	fmt.Println(report)
+
+	// print upgrade plan
+	if plan != nil && len(plan.OrderedUpgradeSteps) > 0 {
+		fmt.Println("📋 UPGRADE PLAN")
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		for _, step := range plan.OrderedUpgradeSteps {
+			fmt.Printf("   %s\n", step)
+		}
+		fmt.Printf("\nEstimated Timeline: %s\n", plan.Timeline)
+		fmt.Println()
+	}
 }
 
 func runList(cmd *cobra.Command, args []string) {
