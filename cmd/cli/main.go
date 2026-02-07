@@ -11,6 +11,7 @@ import (
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/cluster"
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/inventory"
 	"github.com/retr0-kernel/kube-upgrade-advisor/internal/manifests"
+	"github.com/retr0-kernel/kube-upgrade-advisor/internal/planner"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,7 @@ var (
 	manifestPath     string
 	targetVersion    string
 	apiKnowledgePath string
+	manifestOnly     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -57,6 +59,7 @@ func init() {
 
 	// Scan flags
 	scanCmd.Flags().StringVar(&manifestPath, "manifests", "./manifests", "Path to manifest folder")
+	scanCmd.Flags().BoolVar(&manifestOnly, "manifest-only", false, "Only scan manifests (skip cluster scan)")
 
 	// Impact flags
 	impactCmd.Flags().StringVarP(&targetVersion, "target", "t", "", "Target Kubernetes version (required)")
@@ -77,29 +80,7 @@ func main() {
 func runScan(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
-	// Get kubeconfig path
-	if kubeconfig == "" {
-		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-		if kc := os.Getenv("KUBECONFIG"); kc != "" {
-			kubeconfig = kc
-		}
-	}
-
 	fmt.Println("=== Kube Upgrade Advisor - Scan ===\n")
-
-	// Create Kube client
-	fmt.Println("Connecting to Kubernetes cluster...")
-	kubeClient, err := cluster.NewKubeClient(kubeconfig)
-	if err != nil {
-		log.Fatalf("Failed to create kube client: %v", err)
-	}
-
-	// Get cluster version
-	version, err := kubeClient.GetClusterVersion(ctx)
-	if err != nil {
-		log.Fatalf("Failed to get cluster version: %v", err)
-	}
-	fmt.Printf("Cluster version: %s\n\n", version)
 
 	// Create inventory store
 	fmt.Println("Initializing database...")
@@ -109,41 +90,79 @@ func runScan(cmd *cobra.Command, args []string) {
 	}
 	defer store.Close()
 
-	// Save cluster info
-	clusterID := "cluster-1"
-	clusterRec, err := store.SaveCluster(ctx, clusterID, "my-cluster", version)
-	if err != nil {
-		log.Fatalf("Failed to save cluster: %v", err)
-	}
-	fmt.Printf("Saved cluster: %s (version: %s)\n\n", clusterRec.ID, clusterRec.KubeVersion)
+	var clusterID string
+	var version string
 
-	// Create CRD client
-	fmt.Println("Fetching CRDs...")
-	crdClient, err := cluster.NewCRDClientFromKubeClient(kubeClient)
-	if err != nil {
-		log.Fatalf("Failed to create CRD client: %v", err)
-	}
+	if !manifestOnly {
+		// Get kubeconfig path
+		if kubeconfig == "" {
+			kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+			if kc := os.Getenv("KUBECONFIG"); kc != "" {
+				kubeconfig = kc
+			}
+		}
 
-	// List and store CRDs
-	err = crdClient.StoreCRDsToInventory(ctx, clusterID, store)
-	if err != nil {
-		log.Fatalf("Failed to store CRDs: %v", err)
-	}
-	fmt.Println()
+		// Create Kube client
+		fmt.Println("Connecting to Kubernetes cluster...")
+		kubeClient, err := cluster.NewKubeClient(kubeconfig)
+		if err != nil {
+			log.Fatalf("Failed to create kube client: %v", err)
+		}
 
-	// Create Helm client
-	fmt.Println("Fetching Helm releases...")
-	helmClient, err := cluster.NewHelmClientWithKubeconfig(kubeconfig)
-	if err != nil {
-		log.Fatalf("Failed to create Helm client: %v", err)
-	}
+		// Get cluster version
+		version, err = kubeClient.GetClusterVersion(ctx)
+		if err != nil {
+			log.Fatalf("Failed to get cluster version: %v", err)
+		}
+		fmt.Printf("Cluster version: %s\n\n", version)
 
-	// List and store Helm releases
-	err = helmClient.StoreReleasesToInventory(ctx, clusterID, store)
-	if err != nil {
-		log.Fatalf("Failed to store Helm releases: %v", err)
+		// Save cluster info
+		clusterID = "cluster-1"
+		clusterRec, err := store.SaveCluster(ctx, clusterID, "my-cluster", version)
+		if err != nil {
+			log.Fatalf("Failed to save cluster: %v", err)
+		}
+		fmt.Printf("Saved cluster: %s (version: %s)\n\n", clusterRec.ID, clusterRec.KubeVersion)
+
+		// Create CRD client
+		fmt.Println("Fetching CRDs...")
+		crdClient, err := cluster.NewCRDClientFromKubeClient(kubeClient)
+		if err != nil {
+			log.Fatalf("Failed to create CRD client: %v", err)
+		}
+
+		// List and store CRDs
+		err = crdClient.StoreCRDsToInventory(ctx, clusterID, store)
+		if err != nil {
+			log.Fatalf("Failed to store CRDs: %v", err)
+		}
+		fmt.Println()
+
+		// Create Helm client
+		fmt.Println("Fetching Helm releases...")
+		helmClient, err := cluster.NewHelmClientWithKubeconfig(kubeconfig)
+		if err != nil {
+			log.Fatalf("Failed to create Helm client: %v", err)
+		}
+
+		// List and store Helm releases
+		err = helmClient.StoreReleasesToInventory(ctx, clusterID, store)
+		if err != nil {
+			log.Fatalf("Failed to store Helm releases: %v", err)
+		}
+		fmt.Println()
+	} else {
+		// Manifest-only mode - create a dummy cluster
+		fmt.Println("Running in manifest-only mode (no cluster connection)\n")
+		clusterID = "cluster-1"
+		version = "1.21.0" // Default version for testing
+
+		clusterRec, err := store.SaveCluster(ctx, clusterID, "test-cluster", version)
+		if err != nil {
+			log.Fatalf("Failed to save cluster: %v", err)
+		}
+		fmt.Printf("Created test cluster: %s (version: %s)\n\n", clusterRec.ID, clusterRec.KubeVersion)
 	}
-	fmt.Println()
 
 	// Parse local manifests
 	if _, err := os.Stat(manifestPath); err == nil {
@@ -191,9 +210,27 @@ func runImpact(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to compute impact: %v", err)
 	}
 
+	//generate upgrade plan
+	planGenerator := planner.NewPlanner()
+	plan, err := planGenerator.GeneratePlan(assessment)
+	if err != nil {
+		log.Printf("Warning: Failed to generate upgrade plan: %v", err)
+	}
+
 	// generate and print report
 	report := analyzer.GenerateReport(assessment)
 	fmt.Println(report)
+
+	// print upgrade plan
+	if plan != nil && len(plan.OrderedUpgradeSteps) > 0 {
+		fmt.Println("📋 UPGRADE PLAN")
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		for _, step := range plan.OrderedUpgradeSteps {
+			fmt.Printf("   %s\n", step)
+		}
+		fmt.Printf("\nEstimated Timeline: %s\n", plan.Timeline)
+		fmt.Println()
+	}
 }
 
 func runList(cmd *cobra.Command, args []string) {

@@ -27,6 +27,7 @@ type ImpactAssessment struct {
 	DeprecatedManifestAPIs []DeprecatedAPIImpact `json:"deprecatedManifestAPIs"`
 	DeprecatedCRDAPIs      []DeprecatedAPIImpact `json:"deprecatedCRDAPIs"`
 	IncompatibleCharts     []ChartImpact         `json:"incompatibleCharts"`
+	RiskSignals            []RiskSignal          `json:"riskSignals"`
 	OverallRisk            ImpactLevel           `json:"overallRisk"`
 	TotalIssues            int                   `json:"totalIssues"`
 }
@@ -53,6 +54,14 @@ type ChartImpact struct {
 	ImpactLevel        ImpactLevel `json:"impactLevel"`
 	Issues             []string    `json:"issues"`
 	Message            string      `json:"message"`
+}
+
+// RiskSignal represents a risk factor
+type RiskSignal struct {
+	Type        string      `json:"type"`
+	Severity    ImpactLevel `json:"severity"`
+	Description string      `json:"description"`
+	Resource    string      `json:"resource"`
 }
 
 // Analyzer performs upgrade impact analysis
@@ -96,6 +105,7 @@ func (a *Analyzer) ComputeUpgradeImpact(ctx context.Context, clusterID, targetVe
 		DeprecatedManifestAPIs: make([]DeprecatedAPIImpact, 0),
 		DeprecatedCRDAPIs:      make([]DeprecatedAPIImpact, 0),
 		IncompatibleCharts:     make([]ChartImpact, 0),
+		RiskSignals:            make([]RiskSignal, 0),
 	}
 
 	// Check ManifestAPIs
@@ -175,6 +185,16 @@ func (a *Analyzer) ComputeUpgradeImpact(ctx context.Context, clusterID, targetVe
 				Message:            recommendation.Message,
 			}
 			assessment.IncompatibleCharts = append(assessment.IncompatibleCharts, impact)
+
+			// Add risk signal if chart is unknown or outdated
+			if recommendation.RecommendedVersion == "" {
+				assessment.RiskSignals = append(assessment.RiskSignals, RiskSignal{
+					Type:        "unknown_chart",
+					Severity:    ImpactMedium,
+					Description: "Chart not in compatibility matrix - manual verification required",
+					Resource:    fmt.Sprintf("%s/%s", release.Namespace, release.Chart),
+				})
+			}
 		}
 	}
 
@@ -266,6 +286,16 @@ func (a *Analyzer) GenerateReport(assessment *ImpactAssessment) string {
 				}
 			}
 			report += "\n"
+		}
+	}
+
+	if len(assessment.RiskSignals) > 0 {
+		report += fmt.Sprintf("⚠️  RISK SIGNALS (%d)\n", len(assessment.RiskSignals))
+		report += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+		for i, risk := range assessment.RiskSignals {
+			report += fmt.Sprintf("%d. [%s] %s\n", i+1, risk.Type, risk.Description)
+			report += fmt.Sprintf("   Resource: %s\n", risk.Resource)
+			report += fmt.Sprintf("   Severity: %s\n\n", risk.Severity)
 		}
 	}
 
