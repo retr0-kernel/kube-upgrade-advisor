@@ -157,6 +157,7 @@ func (s *Store) SaveCRD(ctx context.Context, clusterID string, crd CRDEntry) (*e
 		// CRD exists, update it
 		return existing.Update().
 			SetGroup(crd.Group).
+			SetKind(crd.Kind).
 			SetVersions(versions).
 			Save(ctx)
 	}
@@ -166,6 +167,7 @@ func (s *Store) SaveCRD(ctx context.Context, clusterID string, crd CRDEntry) (*e
 		Create().
 		SetName(crd.Name).
 		SetGroup(crd.Group).
+		SetKind(crd.Kind).
 		SetVersions(versions).
 		SetClusterID(clusterID).
 		Save(ctx)

@@ -144,19 +144,12 @@ func (c *CRDClient) StoreCRDsToInventory(ctx context.Context, clusterID string, 
 		// Get Helm owner info
 		helmOwnerName, helmOwnerNamespace, _ := c.GetHelmOwnerInfo(crd)
 
-		// Create CRD entry
-		crdEntry := inventory.CRDEntry{
-			Name:    crd.Name,
-			Group:   crd.Group,
-			Version: servedVersions[0], // Use first served version
-			Kind:    crd.Kind,
-		}
-
 		// Save to database
 		entCRD, err := store.GetClient().CRD.
 			Create().
 			SetName(crd.Name).
 			SetGroup(crd.Group).
+			SetKind(crd.Kind).
 			SetVersions(servedVersions).
 			SetClusterID(clusterID).
 			SetNillableHelmOwnerName(&helmOwnerName).
@@ -167,7 +160,7 @@ func (c *CRDClient) StoreCRDsToInventory(ctx context.Context, clusterID string, 
 			return fmt.Errorf("failed to save CRD %s: %w", crd.Name, err)
 		}
 
-		fmt.Printf("Stored CRD: %s (ID: %d)\n", crdEntry.Name, entCRD.ID)
+		fmt.Printf("Stored CRD: %s (Kind: %s, ID: %d)\n", crd.Name, crd.Kind, entCRD.ID)
 	}
 
 	return nil

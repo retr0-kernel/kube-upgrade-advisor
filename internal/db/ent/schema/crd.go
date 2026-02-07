@@ -19,7 +19,9 @@ func (CRD) Fields() []ent.Field {
 		field.String("name").
 			NotEmpty(),
 		field.String("group").
-			Default(""), // Allow empty for core APIs (though CRDs typically have groups)
+			Default(""),
+		field.String("kind").
+			Default(""),
 		field.JSON("versions", []string{}).
 			Optional(),
 		field.String("helm_owner_name").

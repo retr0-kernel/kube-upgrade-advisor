@@ -1,0 +1,139 @@
+{
+  "deprecations": [
+    {
+      "group": "extensions",
+      "version": "v1beta1",
+      "kind": "Ingress",
+      "deprecatedIn": "1.14",
+      "removedIn": "1.22",
+      "replacementAPI": "networking.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to networking.k8s.io/v1 and adjust spec.backend to spec.defaultBackend"
+    },
+    {
+      "group": "networking.k8s.io",
+      "version": "v1beta1",
+      "kind": "Ingress",
+      "deprecatedIn": "1.19",
+      "removedIn": "1.22",
+      "replacementAPI": "networking.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to networking.k8s.io/v1 and adjust spec fields"
+    },
+    {
+      "group": "apiextensions.k8s.io",
+      "version": "v1beta1",
+      "kind": "CustomResourceDefinition",
+      "deprecatedIn": "1.16",
+      "removedIn": "1.22",
+      "replacementAPI": "apiextensions.k8s.io/v1",
+      "migrationNotes": "Migrate to v1 CRD format with structural schemas required"
+    },
+    {
+      "group": "rbac.authorization.k8s.io",
+      "version": "v1beta1",
+      "kind": "ClusterRole",
+      "deprecatedIn": "1.17",
+      "removedIn": "1.22",
+      "replacementAPI": "rbac.authorization.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to rbac.authorization.k8s.io/v1"
+    },
+    {
+      "group": "rbac.authorization.k8s.io",
+      "version": "v1beta1",
+      "kind": "ClusterRoleBinding",
+      "deprecatedIn": "1.17",
+      "removedIn": "1.22",
+      "replacementAPI": "rbac.authorization.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to rbac.authorization.k8s.io/v1"
+    },
+    {
+      "group": "rbac.authorization.k8s.io",
+      "version": "v1beta1",
+      "kind": "Role",
+      "deprecatedIn": "1.17",
+      "removedIn": "1.22",
+      "replacementAPI": "rbac.authorization.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to rbac.authorization.k8s.io/v1"
+    },
+    {
+      "group": "rbac.authorization.k8s.io",
+      "version": "v1beta1",
+      "kind": "RoleBinding",
+      "deprecatedIn": "1.17",
+      "removedIn": "1.22",
+      "replacementAPI": "rbac.authorization.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to rbac.authorization.k8s.io/v1"
+    },
+    {
+      "group": "admissionregistration.k8s.io",
+      "version": "v1beta1",
+      "kind": "MutatingWebhookConfiguration",
+      "deprecatedIn": "1.16",
+      "removedIn": "1.22",
+      "replacementAPI": "admissionregistration.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to admissionregistration.k8s.io/v1"
+    },
+    {
+      "group": "admissionregistration.k8s.io",
+      "version": "v1beta1",
+      "kind": "ValidatingWebhookConfiguration",
+      "deprecatedIn": "1.16",
+      "removedIn": "1.22",
+      "replacementAPI": "admissionregistration.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to admissionregistration.k8s.io/v1"
+    },
+    {
+      "group": "policy",
+      "version": "v1beta1",
+      "kind": "PodSecurityPolicy",
+      "deprecatedIn": "1.21",
+      "removedIn": "1.25",
+      "replacementAPI": "Pod Security Admission",
+      "migrationNotes": "Migrate to Pod Security Standards (PSS) and Pod Security Admission"
+    },
+    {
+      "group": "batch",
+      "version": "v1beta1",
+      "kind": "CronJob",
+      "deprecatedIn": "1.21",
+      "removedIn": "1.25",
+      "replacementAPI": "batch/v1",
+      "migrationNotes": "Update apiVersion to batch/v1"
+    },
+    {
+      "group": "discovery.k8s.io",
+      "version": "v1beta1",
+      "kind": "EndpointSlice",
+      "deprecatedIn": "1.21",
+      "removedIn": "1.25",
+      "replacementAPI": "discovery.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to discovery.k8s.io/v1"
+    },
+    {
+      "group": "flowcontrol.apiserver.k8s.io",
+      "version": "v1beta1",
+      "kind": "FlowSchema",
+      "deprecatedIn": "1.26",
+      "removedIn": "1.29",
+      "replacementAPI": "flowcontrol.apiserver.k8s.io/v1beta3",
+      "migrationNotes": "Update apiVersion to flowcontrol.apiserver.k8s.io/v1beta3"
+    },
+    {
+      "group": "flowcontrol.apiserver.k8s.io",
+      "version": "v1beta1",
+      "kind": "PriorityLevelConfiguration",
+      "deprecatedIn": "1.26",
+      "removedIn": "1.29",
+      "replacementAPI": "flowcontrol.apiserver.k8s.io/v1beta3",
+      "migrationNotes": "Update apiVersion to flowcontrol.apiserver.k8s.io/v1beta3"
+    },
+    {
+      "group": "storage.k8s.io",
+      "version": "v1beta1",
+      "kind": "CSIStorageCapacity",
+      "deprecatedIn": "1.24",
+      "removedIn": "1.27",
+      "replacementAPI": "storage.k8s.io/v1",
+      "migrationNotes": "Update apiVersion to storage.k8s.io/v1"
+    }
+  ]
+}
