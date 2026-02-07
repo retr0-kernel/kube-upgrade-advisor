@@ -1,0 +1,152 @@
+{
+  "charts": [
+    {
+      "chartName": "nginx-ingress",
+      "repository": "https://kubernetes.github.io/ingress-nginx",
+      "versions": [
+        {
+          "chartVersion": "4.8.0",
+          "minKubeVersion": "1.25",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "4.5.0",
+          "minKubeVersion": "1.22",
+          "maxKubeVersion": "1.27",
+          "compatibleWith": ["1.22", "1.23", "1.24", "1.25", "1.26", "1.27"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "4.0.0",
+          "minKubeVersion": "1.19",
+          "maxKubeVersion": "1.25",
+          "compatibleWith": ["1.19", "1.20", "1.21", "1.22", "1.23", "1.24", "1.25"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "3.0.0",
+          "minKubeVersion": "1.16",
+          "maxKubeVersion": "1.21",
+          "compatibleWith": ["1.16", "1.17", "1.18", "1.19", "1.20", "1.21"],
+          "knownIssues": ["Uses deprecated Ingress API in k8s 1.22+"]
+        }
+      ]
+    },
+    {
+      "chartName": "cert-manager",
+      "repository": "https://charts.jetstack.io",
+      "versions": [
+        {
+          "chartVersion": "v1.13.0",
+          "minKubeVersion": "1.22",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.22", "1.23", "1.24", "1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "v1.10.0",
+          "minKubeVersion": "1.21",
+          "maxKubeVersion": "1.27",
+          "compatibleWith": ["1.21", "1.22", "1.23", "1.24", "1.25", "1.26", "1.27"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "v1.8.0",
+          "minKubeVersion": "1.19",
+          "maxKubeVersion": "1.25",
+          "compatibleWith": ["1.19", "1.20", "1.21", "1.22", "1.23", "1.24", "1.25"],
+          "knownIssues": []
+        }
+      ]
+    },
+    {
+      "chartName": "prometheus",
+      "repository": "https://prometheus-community.github.io/helm-charts",
+      "versions": [
+        {
+          "chartVersion": "25.0.0",
+          "minKubeVersion": "1.23",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.23", "1.24", "1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "23.0.0",
+          "minKubeVersion": "1.21",
+          "maxKubeVersion": "1.27",
+          "compatibleWith": ["1.21", "1.22", "1.23", "1.24", "1.25", "1.26", "1.27"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "20.0.0",
+          "minKubeVersion": "1.19",
+          "maxKubeVersion": "1.25",
+          "compatibleWith": ["1.19", "1.20", "1.21", "1.22", "1.23", "1.24", "1.25"],
+          "knownIssues": ["Uses deprecated PodSecurityPolicy in k8s 1.25+"]
+        }
+      ]
+    },
+    {
+      "chartName": "grafana",
+      "repository": "https://grafana.github.io/helm-charts",
+      "versions": [
+        {
+          "chartVersion": "7.0.0",
+          "minKubeVersion": "1.23",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.23", "1.24", "1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "6.50.0",
+          "minKubeVersion": "1.20",
+          "maxKubeVersion": "1.27",
+          "compatibleWith": ["1.20", "1.21", "1.22", "1.23", "1.24", "1.25", "1.26", "1.27"],
+          "knownIssues": []
+        }
+      ]
+    },
+    {
+      "chartName": "argocd",
+      "repository": "https://argoproj.github.io/argo-helm",
+      "versions": [
+        {
+          "chartVersion": "5.50.0",
+          "minKubeVersion": "1.23",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.23", "1.24", "1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "5.20.0",
+          "minKubeVersion": "1.21",
+          "maxKubeVersion": "1.26",
+          "compatibleWith": ["1.21", "1.22", "1.23", "1.24", "1.25", "1.26"],
+          "knownIssues": []
+        }
+      ]
+    },
+    {
+      "chartName": "metrics-server",
+      "repository": "https://kubernetes-sigs.github.io/metrics-server",
+      "versions": [
+        {
+          "chartVersion": "3.11.0",
+          "minKubeVersion": "1.21",
+          "maxKubeVersion": "1.29",
+          "compatibleWith": ["1.21", "1.22", "1.23", "1.24", "1.25", "1.26", "1.27", "1.28", "1.29"],
+          "knownIssues": []
+        },
+        {
+          "chartVersion": "3.8.0",
+          "minKubeVersion": "1.19",
+          "maxKubeVersion": "1.25",
+          "compatibleWith": ["1.19", "1.20", "1.21", "1.22", "1.23", "1.24", "1.25"],
+          "knownIssues": []
+        }
+      ]
+    }
+  ]
+}
