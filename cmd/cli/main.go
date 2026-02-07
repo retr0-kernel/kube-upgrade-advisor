@@ -175,13 +175,14 @@ func runImpact(cmd *cobra.Command, args []string) {
 	}
 	defer store.Close()
 
-	// Create analyzer
-	analyzer, err := analysis.NewAnalyzer(apiKnowledgePath, store)
+	// create analyzer with both knowledge bases
+	chartKnowledgePath := "knowledge-base/chart-matrix.json"
+	analyzer, err := analysis.NewAnalyzer(apiKnowledgePath, chartKnowledgePath, store)
 	if err != nil {
 		log.Fatalf("Failed to create analyzer: %v", err)
 	}
 
-	// Compute impact
+	// compute impact
 	clusterID := "cluster-1"
 	fmt.Printf("Analyzing upgrade impact for target version: %s\n", targetVersion)
 
@@ -190,7 +191,7 @@ func runImpact(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to compute impact: %v", err)
 	}
 
-	// Generate and print report
+	// generate and print report
 	report := analyzer.GenerateReport(assessment)
 	fmt.Println(report)
 }

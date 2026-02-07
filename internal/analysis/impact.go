@@ -21,44 +21,63 @@ const (
 
 // ImpactAssessment represents the analysis of upgrade impact
 type ImpactAssessment struct {
-	ClusterID              string
-	CurrentVersion         string
-	TargetVersion          string
-	DeprecatedManifestAPIs []DeprecatedAPIImpact
-	DeprecatedCRDAPIs      []DeprecatedAPIImpact
-	OverallRisk            ImpactLevel
-	TotalIssues            int
+	ClusterID              string                `json:"clusterId"`
+	CurrentVersion         string                `json:"currentVersion"`
+	TargetVersion          string                `json:"targetVersion"`
+	DeprecatedManifestAPIs []DeprecatedAPIImpact `json:"deprecatedManifestAPIs"`
+	DeprecatedCRDAPIs      []DeprecatedAPIImpact `json:"deprecatedCRDAPIs"`
+	IncompatibleCharts     []ChartImpact         `json:"incompatibleCharts"`
+	OverallRisk            ImpactLevel           `json:"overallRisk"`
+	TotalIssues            int                   `json:"totalIssues"`
 }
 
 // DeprecatedAPIImpact represents impact from deprecated APIs
 type DeprecatedAPIImpact struct {
-	Group          string
-	Version        string
-	Kind           string
-	AffectedCount  int
-	ImpactLevel    ImpactLevel
-	RemovedIn      string
-	ReplacementAPI string
-	MigrationNotes string
-	Source         string // "manifest" or "crd"
+	Group          string      `json:"group"`
+	Version        string      `json:"version"`
+	Kind           string      `json:"kind"`
+	AffectedCount  int         `json:"affectedCount"`
+	ImpactLevel    ImpactLevel `json:"impactLevel"`
+	RemovedIn      string      `json:"removedIn"`
+	ReplacementAPI string      `json:"replacementAPI"`
+	MigrationNotes string      `json:"migrationNotes"`
+	Source         string      `json:"source"` // "manifest" or "crd"
+}
+
+// ChartImpact represents impact from incompatible charts
+type ChartImpact struct {
+	ChartName          string      `json:"chartName"`
+	Namespace          string      `json:"namespace"`
+	CurrentVersion     string      `json:"currentVersion"`
+	RecommendedVersion string      `json:"recommendedVersion"`
+	ImpactLevel        ImpactLevel `json:"impactLevel"`
+	Issues             []string    `json:"issues"`
+	Message            string      `json:"message"`
 }
 
 // Analyzer performs upgrade impact analysis
 type Analyzer struct {
-	apiKB *knowledge.APIKnowledgeBase
-	store *inventory.Store
+	apiKB   *knowledge.APIKnowledgeBase
+	chartKB *knowledge.ChartKnowledgeBase
+	store   *inventory.Store
 }
 
 // NewAnalyzer creates a new impact analyzer
-func NewAnalyzer(apiKnowledgeBasePath string, store *inventory.Store) (*Analyzer, error) {
+func NewAnalyzer(apiKnowledgeBasePath, chartKnowledgeBasePath string, store *inventory.Store) (*Analyzer, error) {
 	apiKB := knowledge.NewAPIKnowledgeBase()
 	if err := apiKB.LoadFromFile(apiKnowledgeBasePath); err != nil {
 		return nil, fmt.Errorf("failed to load API knowledge base: %w", err)
 	}
 
+	chartKB := knowledge.NewChartKnowledgeBase()
+	if err := chartKB.LoadFromFile(chartKnowledgeBasePath); err != nil {
+		return nil, fmt.Errorf("failed to load chart knowledge base: %w", err)
+	}
+
 	return &Analyzer{
-		apiKB: apiKB,
-		store: store,
+		apiKB:   apiKB,
+		chartKB: chartKB,
+		store:   store,
 	}, nil
 }
 
@@ -76,6 +95,7 @@ func (a *Analyzer) ComputeUpgradeImpact(ctx context.Context, clusterID, targetVe
 		TargetVersion:          targetVersion,
 		DeprecatedManifestAPIs: make([]DeprecatedAPIImpact, 0),
 		DeprecatedCRDAPIs:      make([]DeprecatedAPIImpact, 0),
+		IncompatibleCharts:     make([]ChartImpact, 0),
 	}
 
 	// Check ManifestAPIs
@@ -84,11 +104,7 @@ func (a *Analyzer) ComputeUpgradeImpact(ctx context.Context, clusterID, targetVe
 		return nil, fmt.Errorf("failed to query manifest APIs: %w", err)
 	}
 
-	manifestAPIMap := make(map[string]int)
 	for _, api := range manifestAPIs {
-		key := fmt.Sprintf("%s/%s/%s", api.Group, api.Version, api.Kind)
-		manifestAPIMap[key]++
-
 		if a.apiKB.IsAPIRemoved(api.Group, api.Version, api.Kind, targetVersion) {
 			dep, _ := a.apiKB.CheckDeprecation(api.Group, api.Version, api.Kind)
 
@@ -135,8 +151,37 @@ func (a *Analyzer) ComputeUpgradeImpact(ctx context.Context, clusterID, targetVe
 		}
 	}
 
+	// Check Helm Charts
+	helmReleases, err := cluster.QueryHelmReleases().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query helm releases: %w", err)
+	}
+
+	for _, release := range helmReleases {
+		recommendation := a.chartKB.FindCompatibleChartVersion(
+			release.Chart,
+			release.ChartVersion,
+			targetVersion,
+		)
+
+		if !recommendation.IsCompatible {
+			impact := ChartImpact{
+				ChartName:          release.Chart,
+				Namespace:          release.Namespace,
+				CurrentVersion:     release.ChartVersion,
+				RecommendedVersion: recommendation.RecommendedVersion,
+				ImpactLevel:        ImpactHigh,
+				Issues:             recommendation.KnownIssues,
+				Message:            recommendation.Message,
+			}
+			assessment.IncompatibleCharts = append(assessment.IncompatibleCharts, impact)
+		}
+	}
+
 	// Calculate overall risk
-	assessment.TotalIssues = len(assessment.DeprecatedManifestAPIs) + len(assessment.DeprecatedCRDAPIs)
+	assessment.TotalIssues = len(assessment.DeprecatedManifestAPIs) +
+		len(assessment.DeprecatedCRDAPIs) +
+		len(assessment.IncompatibleCharts)
 	assessment.OverallRisk = a.calculateOverallRisk(assessment)
 
 	return assessment, nil
@@ -159,7 +204,7 @@ func (a *Analyzer) calculateOverallRisk(assessment *ImpactAssessment) ImpactLeve
 		return ImpactCritical
 	}
 
-	if len(assessment.DeprecatedCRDAPIs) > 0 {
+	if len(assessment.DeprecatedCRDAPIs) > 0 || len(assessment.IncompatibleCharts) > 0 {
 		return ImpactHigh
 	}
 
@@ -203,8 +248,29 @@ func (a *Analyzer) GenerateReport(assessment *ImpactAssessment) string {
 		}
 	}
 
+	if len(assessment.IncompatibleCharts) > 0 {
+		report += fmt.Sprintf("📦 INCOMPATIBLE HELM CHARTS (%d)\n", len(assessment.IncompatibleCharts))
+		report += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+		for i, chart := range assessment.IncompatibleCharts {
+			report += fmt.Sprintf("%d. %s (namespace: %s)\n", i+1, chart.ChartName, chart.Namespace)
+			report += fmt.Sprintf("   Current Version: %s\n", chart.CurrentVersion)
+			if chart.RecommendedVersion != "" {
+				report += fmt.Sprintf("   Recommended Version: %s\n", chart.RecommendedVersion)
+			}
+			report += fmt.Sprintf("   Impact: %s\n", chart.ImpactLevel)
+			report += fmt.Sprintf("   Message: %s\n", chart.Message)
+			if len(chart.Issues) > 0 {
+				report += fmt.Sprintf("   Known Issues:\n")
+				for _, issue := range chart.Issues {
+					report += fmt.Sprintf("     - %s\n", issue)
+				}
+			}
+			report += "\n"
+		}
+	}
+
 	if assessment.TotalIssues == 0 {
-		report += "✅ No deprecated APIs found. Safe to upgrade!\n"
+		report += "✅ No deprecated APIs or incompatible charts found. Safe to upgrade!\n"
 	}
 
 	return report
